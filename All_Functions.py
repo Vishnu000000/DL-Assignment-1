@@ -8,7 +8,7 @@ def train_model(model, optimizer, lr, batch_size, epochs,
     val_acc = []
     val_loss = []
     
-    # Initialize optimizer states
+    # all Optimising, stsates like momentum,, rmsprop etc
     if optimizer in ['momentum', 'nag']:
         v_w = [np.zeros_like(w) for w in model.weights]
         v_b = [np.zeros_like(b) for b in model.biases]
@@ -23,22 +23,20 @@ def train_model(model, optimizer, lr, batch_size, epochs,
         t = 0
 
     for epoch in range(epochs):
-        # Shuffle training data
         indices = np.random.permutation(len(X_train))
         X_shuffled = X_train[indices]
         y_shuffled = y_train[indices]
         
         epoch_loss = 0
         for i in range(0, len(X_train), batch_size):
-            # Get mini-batch
+            #mini-batch line
             X_batch = X_shuffled[i:i+batch_size]
             y_batch = y_shuffled[i:i+batch_size]
             
-            # Forward + backward pass
             model.forward(X_batch)
             grads_w, grads_b = model.backprop(y_batch)
             
-            # Optimizer updates
+            # checking type, whether of sgd or such
             if optimizer == 'sgd':
                 update_sgd(model, grads_w, grads_b, lr)
                 
@@ -69,7 +67,7 @@ def train_model(model, optimizer, lr, batch_size, epochs,
             
             epoch_loss += model.compute_loss(y_batch)
         
-        # Epoch metrics
+        # SO we find all metrics are here only
         train_acc.append(model.evaluate(X_train, y_train)[0])
         train_loss.append(epoch_loss/(len(X_train)//batch_size))
         val_acc.append(model.evaluate(X_val, y_val)[0])
