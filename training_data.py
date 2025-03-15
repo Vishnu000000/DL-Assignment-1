@@ -26,11 +26,3 @@ def Q1_data_classify(Xval, Yval): # training samples will be called
         axs[i//5, i%5].axis('off')
     wandb.log({"Sample Images": wandb.Image(fig)})
     plt.close()
-
-def main():
-  X_train, Y_train, X_val, Y_val, X_test, Y_test = load_data()
-  
-  Q1_data_classify(X_train, Y_train)
-
-if __name__ == "__main__":
-  main()
