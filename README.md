@@ -4,7 +4,7 @@ This repository contains the implementation and experiments for the deep learnin
 
 Link for github repositery: https://github.com/Vishnu000000/DL-Assignment-1
 
-wand b link: https://wandb.ai/cs24m022-iit-madras-foundation/Deep_Learning_Assignment1_cs24m022/reports/DA6401_Assignment1--VmlldzoxMTgzMDM4NQ
+wand b link: https://wandb.ai/cs24m022-iit-madras-foundation/Deep_Learning_Assignment1_cs24m022/reports/DA6401_Assignment1--VmlldzoxMTgzMDM4NQ?accessToken=2uisv4p86papc3tw1t3dso655xj0y97jps42y74abc8t9ofqgtpy2xtp35g8ovwi
 
 ## File Structure
 
