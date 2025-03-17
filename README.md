@@ -2,6 +2,10 @@
 
 This repository contains the implementation and experiments for the deep learning assignment. The project is structured into several Python files:
 
+Link for github repositery: https://github.com/Vishnu000000/DL-Assignment-1
+
+wand b link: https://wandb.ai/cs24m022-iit-madras-foundation/Deep_Learning_Assignment1_cs24m022/reports/DA6401_Assignment1--VmlldzoxMTgzMDM4NQ
+
 ## File Structure
 
 - **network.py**  
