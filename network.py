@@ -1,3 +1,4 @@
+# network.py
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -6,12 +7,12 @@ from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import train_test_split
 import wandb
 
-# All Function we use, activations
+# Activation functions
 def relu(x):
     return np.maximum(0, x)
 
 def sigmoid(x):
-    clip_x = np.clip(x, -50, 50)  # After custom runs, i limited
+    clip_x = np.clip(x, -50, 50)  # Limit to avoid overflow
     return 1 / (1 + np.exp(-clip_x))
 
 def tanh(x):
@@ -30,7 +31,7 @@ def softmax(x):
 # -------------------------
 class NeuralNetwork:
     def __init__(self, config):
-        """ Best one
+        """
         config: dictionary of hyperparameters. For example:
           {
              'inp_size': 784,
@@ -40,7 +41,7 @@ class NeuralNetwork:
              'batch_sz': 32,
              'lr': 1e-3,
              'weight_init': 'xavier',   # or "random"
-             'optimizer': 'adam',        # options: sgd, momentum, nag, rmsprop, adam, nadam
+             'optimizer': 'adam',        # options: sgd, momentum, nesterov, rmsprop, adam, nadam
              'epochs': 5,
              'activation': 'relu',       # activation function for hidden layers
              'loss_type': 'cross_entropy',  # or "mean_squared_error"
@@ -72,7 +73,7 @@ class NeuralNetwork:
         self.eps = config.get('eps', 1e-8)
 
         self.layer_dims = [self.inp_size] + [self.hidden_size] * self.num_hidden_layers + [self.out_size]
-        # Initialize weights and biases for all layers
+        # Initialize weights and biases for all layers.
         self.params = self._initialize_parameters()
         self._prepare_data()
 
@@ -81,10 +82,7 @@ class NeuralNetwork:
         for i in range(1, len(self.layer_dims)):
             fan_in = self.layer_dims[i-1]
             fan_out = self.layer_dims[i]
-            if self.weight_init == 'xavier':
-                scale = np.sqrt(2 / (fan_in + fan_out))
-            else:
-                scale = 0.01
+            scale = np.sqrt(2 / (fan_in + fan_out)) if self.weight_init == 'xavier' else 0.01
             params[i] = {
                 'weights': scale * np.random.randn(fan_out, fan_in),
                 'biases': np.zeros((fan_out, 1))
@@ -92,17 +90,14 @@ class NeuralNetwork:
         return params
 
     def _prepare_data(self):
-        # Load dataset (Fashion-MNIST or MNIST)
         if self.dataset_choice == 'fashion':
             (X_train, y_train), (X_test, y_test) = fashion_mnist.load_data()
         else:
             (X_train, y_train), (X_test, y_test) = mnist.load_data()
 
-        # Normalize and reshape: flatten 28x28 images to 784 size
         X_train = X_train.reshape(-1, 784).T / 255.0
         X_test = X_test.reshape(-1, 784).T / 255.0
 
-        # Use 10% of training data for validation, splitting as said
         X_train, X_val, y_train, y_val = train_test_split(
             X_train.T, y_train, test_size=0.1, stratify=y_train, random_state=42)
         self.X_train = X_train.T
@@ -131,7 +126,6 @@ class NeuralNetwork:
             else:
                 a = z
             activations.append(a)
-        # Softmax to get probabilities
         probs = softmax(activations[-1])
         activations[-1] = probs
         return activations
@@ -154,7 +148,7 @@ class NeuralNetwork:
         m = y.shape[0]
         L = len(self.params)
         y_onehot = np.eye(self.out_size)[y].T
-        delta = activations[-1] - y_onehot  # softmax + cross entropy derivative
+        delta = activations[-1] - y_onehot
 
         for i in reversed(range(1, L + 1)):
             a_prev = activations[i-1]
@@ -207,40 +201,30 @@ class NeuralNetwork:
             self.params[i]['weights'] -= self.lr * v_corr_W / (np.sqrt(s_corr_W) + self.eps)
             self.params[i]['biases']  -= self.lr * v_corr_b / (np.sqrt(s_corr_b) + self.eps)
         return v, s
+
     def update_parameters_nesterov(self, gradients, v, beta):
         for i in self.params:
-            # Update momentum using the current gradient
             v[i]['dW'] = beta * v[i]['dW'] + (1 - beta) * gradients[i]['dW']
             v[i]['db'] = beta * v[i]['db'] + (1 - beta) * gradients[i]['db']
-            # Nesterov update: incorporate the lookahead momentum term along with the gradient
             self.params[i]['weights'] -= self.lr * (beta * v[i]['dW'] + gradients[i]['dW'])
             self.params[i]['biases']  -= self.lr * (beta * v[i]['db'] + gradients[i]['db'])
         return v
 
     def update_parameters_nadam(self, gradients, v, s, t):
         for i in self.params:
-            # Update first moment estimate
             v[i]['dW'] = self.b1 * v[i]['dW'] + (1 - self.b1) * gradients[i]['dW']
             v[i]['db'] = self.b1 * v[i]['db'] + (1 - self.b1) * gradients[i]['db']
-            # Bias-corrected first moment estimates
             m_hat_W = v[i]['dW'] / (1 - self.b1 ** t)
             m_hat_b = v[i]['db'] / (1 - self.b1 ** t)
-
-            # Update second moment estimate
             s[i]['dW'] = self.b2 * s[i]['dW'] + (1 - self.b2) * (gradients[i]['dW'] ** 2)
             s[i]['db'] = self.b2 * s[i]['db'] + (1 - self.b2) * (gradients[i]['db'] ** 2)
             s_hat_W = s[i]['dW'] / (1 - self.b2 ** t)
             s_hat_b = s[i]['db'] / (1 - self.b2 ** t)
-
-            # Nadam have that lookahead correction:
             m_bar_W = (self.b1 * m_hat_W + (1 - self.b1) * gradients[i]['dW'] / (1 - self.b1 ** t))
             m_bar_b = (self.b1 * m_hat_b + (1 - self.b1) * gradients[i]['db'] / (1 - self.b1 ** t))
-
-            # Update parameters using the Nadam rule
             self.params[i]['weights'] -= self.lr * m_bar_W / (np.sqrt(s_hat_W) + self.eps)
             self.params[i]['biases']  -= self.lr * m_bar_b / (np.sqrt(s_hat_b) + self.eps)
         return v, s
-
 
     def fit(self):
         if self.optimizer_choice == 'sgd':
@@ -343,7 +327,6 @@ class NeuralNetwork:
                   f"Val Acc: {val_acc:.2f}%, Loss: {val_loss:.4f}")
 
     def _train_nesterov(self):
-        # first of all, give momentum dvalue as zero
         v = {i: {'dW': np.zeros_like(self.params[i]['weights']),
                 'db': np.zeros_like(self.params[i]['biases'])} for i in self.params}
         for epoch in range(self.epochs):
@@ -365,7 +348,6 @@ class NeuralNetwork:
                   f"Val Acc: {val_acc:.2f}%, Loss: {val_loss:.4f}")
 
     def _train_nadam(self):
-        # Initialize first and second moment dictionaries with zeros
         v = {i: {'dW': np.zeros_like(self.params[i]['weights']),
                 'db': np.zeros_like(self.params[i]['biases'])} for i in self.params}
         s = {i: {'dW': np.zeros_like(self.params[i]['weights']),
@@ -389,7 +371,6 @@ class NeuralNetwork:
                           "val_loss": val_loss, "val_accuracy": val_acc})
             print(f"Epoch {epoch}: Train Acc: {train_acc:.2f}%, Loss: {train_loss:.4f} | "
                   f"Val Acc: {val_acc:.2f}%, Loss: {val_loss:.4f}")
-
 
     def predict(self, X):
         activations = self.forward_pass(X)
